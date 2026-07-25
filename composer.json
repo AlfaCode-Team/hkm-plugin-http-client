@@ -1,0 +1,15 @@
+{
+    "name": "alfacode-team/hkm-plugin-http-client",
+    "description": "HKM Kernel plugin providing 'http.client'.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["hkm-kernel", "plugin", "php", "http.client"],
+    "require": {
+        "php": ">=8.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\HttpClient\\": ""
+        }
+    }
+}

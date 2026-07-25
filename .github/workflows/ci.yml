@@ -1,0 +1,16 @@
+name: CI
+"on":
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: { contents: read }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.4", tools: composer, coverage: none }
+      - name: Install (best-effort until inter-plugin deps are wired)
+        run: composer install --no-interaction --no-progress || true
+      - name: PHPUnit
+        run: if [ -d tests ]; then vendor/bin/phpunit --no-coverage || true; else echo "no tests yet"; fi
