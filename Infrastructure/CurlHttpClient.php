@@ -124,11 +124,115 @@ final class CurlHttpClient implements HttpClientPort
     // ── Internals ──────────────────────────────────────────────────────────────
 
     /**
+     * Reject a URL that must never be fetched. Returns an error string (the
+     * transport-failure channel this class already uses) or null to proceed.
+     *
+     * TWO LAYERS, both needed:
+     *
+     *  1. Scheme. Only http/https. CURLOPT_PROTOCOLS below enforces this at the
+     *     curl level too, but rejecting here gives a clear message instead of a
+     *     bare curl error, and covers builds where the constant is missing.
+     *
+     *  2. Link-local addresses (169.254.0.0/16, fe80::/10). This is where every
+     *     cloud provider parks its instance-metadata service — AWS, GCP, Azure
+     *     and DigitalOcean all answer on 169.254.169.254, handing out IAM
+     *     credentials to anything that asks. It is the single highest-value SSRF
+     *     target and has no legitimate use from application code, so it is
+     *     blocked unconditionally.
+     *
+     * Broader private-range blocking (10/8, 172.16/12, 192.168/16, 127/8) is
+     * OPT-IN via HTTP_CLIENT_BLOCK_PRIVATE, because service-to-service calls to
+     * internal hosts are a normal, intended use of this client — defaulting it
+     * on would break them silently.
+     *
+     * KNOWN LIMIT: the host is resolved here and again by curl, so a DNS-rebind
+     * attack can still slip between the two checks. Closing that needs
+     * CURLOPT_RESOLVE pinning to the address verified here; it is not attempted
+     * yet and is tracked separately.
+     */
+    private static function assertUrlIsAllowed(string $url): ?string
+    {
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return "Refusing to request [{$url}]: only http and https are allowed.";
+        }
+
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        if ($host === '') {
+            return "Refusing to request [{$url}]: no host.";
+        }
+
+        $blockPrivate = filter_var(
+            \function_exists('env') ? (env('HTTP_CLIENT_BLOCK_PRIVATE') ?? false) : false,
+            FILTER_VALIDATE_BOOL,
+        );
+
+        foreach (self::resolveHost($host) as $ip) {
+            if (self::isLinkLocal($ip)) {
+                return "Refusing to request [{$url}]: {$ip} is link-local "
+                     . '(cloud instance-metadata range).';
+            }
+
+            if ($blockPrivate && !filter_var(
+                $ip,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE,
+            )) {
+                return "Refusing to request [{$url}]: {$ip} is a private or reserved address "
+                     . '(HTTP_CLIENT_BLOCK_PRIVATE is on).';
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<string> every address $host resolves to (the literal, if it is one) */
+    private static function resolveHost(string $host): array
+    {
+        $host = trim($host, '[]'); // IPv6 literals arrive bracketed
+
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return [$host];
+        }
+
+        $records = @dns_get_record($host, DNS_A | DNS_AAAA) ?: [];
+        $ips     = [];
+        foreach ($records as $r) {
+            if (isset($r['ip']))   { $ips[] = $r['ip']; }
+            if (isset($r['ipv6'])) { $ips[] = $r['ipv6']; }
+        }
+
+        // A name that does not resolve is curl's problem, not a policy failure.
+        return $ips;
+    }
+
+    /** 169.254.0.0/16 or fe80::/10 — where cloud metadata services live. */
+    private static function isLinkLocal(string $ip): bool
+    {
+        if (str_starts_with($ip, '169.254.')) {
+            return true;
+        }
+
+        $packed = @inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16) {
+            return false;
+        }
+
+        // fe80::/10 — first 10 bits are 1111111010.
+        return (ord($packed[0]) === 0xFE) && ((ord($packed[1]) & 0xC0) === 0x80);
+    }
+
+    /**
      * @param string[] $headers
      * @return HttpClientResponse|string  response on success, error message on transport failure
      */
     private function execute(string $method, string $url, array $headers, ?string $body, int $timeout, int $connectTimeout): HttpClientResponse|string
     {
+        // SSRF guard — see assertUrlIsAllowed(). Runs BEFORE curl is touched.
+        if (($rejection = self::assertUrlIsAllowed($url)) !== null) {
+            return $rejection;
+        }
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $url,
@@ -143,6 +247,17 @@ final class CurlHttpClient implements HttpClientPort
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_ACCEPT_ENCODING => '',   // negotiate + transparently decode gzip/deflate
             CURLOPT_NOSIGNAL        => true, // no SIGALRM DNS timeout in threaded/Swoole SAPIs
+
+            // Restrict the protocol set. Unrestricted, curl happily serves
+            // file:///etc/passwd, plus gopher://, dict:// and scp:// — so any
+            // caller-influenced URL was a local file read. An HTTP client port
+            // has no legitimate use for any of them.
+            //
+            // CURLOPT_PROTOCOLS is deprecated in favour of the _STR form; set
+            // whichever this build understands.
+            ...(defined('CURLOPT_PROTOCOLS_STR')
+                ? [CURLOPT_PROTOCOLS_STR => 'http,https']
+                : [CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS]),
         ]);
         if ($body !== null) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
