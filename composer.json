@@ -45,6 +45,118 @@
         {
             "type": "vcs",
             "url": "https://github.com/hakrichTech/type-alias"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-audit"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-auth"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-authorization"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-commands"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-cookie"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-crypto"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-database"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-dev-tools"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-edge"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-feedback"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-i18n"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-logger"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-mail"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-oauth2"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-pageflow"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-queue"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-redis-cache"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-security-filters"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-session"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-settings"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-siteseo"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-social-auth"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-storage"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-tenancy"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-user"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-validation"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-view"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/AlfaCode-Team/hkm-plugin-vitemanifest"
         }
     ],
     "minimum-stability": "dev",
