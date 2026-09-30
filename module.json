@@ -1,7 +1,7 @@
 {
     "name": "http-client",
-    "version": "1.0.5",
-    "kernel": "^1.13.1",
+    "version": "1.0.6",
+    "kernel": "^1.17.1",
     "solves": "http.client",
     "type": "module",
 
