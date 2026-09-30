@@ -269,20 +269,32 @@ final class CurlHttpClient implements HttpClientPort
             return ($dlTotal > $this->maxResponseBytes || $dlNow > $this->maxResponseBytes) ? 1 : 0;
         });
 
+        // NO `curl_close()`. Since PHP 8.0 a handle is a `CurlHandle` OBJECT freed by
+        // refcount, so the call has had no effect for four major versions — and PHP
+        // 8.5 deprecates it, which means every outbound request this plugin makes
+        // emits a deprecation notice. On a CLI command that is a line of noise in
+        // front of the output; in a test run it is one per request; and anywhere the
+        // error handler is configured to promote notices it is an exception on a
+        // path that was working. `unset()` is what releases the handle early now,
+        // and this method returns immediately afterwards in any case.
+        //
+        // This plugin requires PHP >= 8.4, so there is no version to branch on: the
+        // object handle is the only thing any supported build has.
         $raw = curl_exec($ch);
         if ($raw === false) {
             $error = curl_error($ch);
             $aborted = curl_errno($ch) === CURLE_ABORTED_BY_CALLBACK;
-            curl_close($ch);
+            unset($ch);
             if ($aborted) {
                 return "response exceeded {$this->maxResponseBytes} byte limit";
             }
             return $error !== '' ? $error : 'unknown transport error';
         }
 
+        // Read before the handle goes, because `curl_getinfo()` needs it.
         $status     = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        curl_close($ch);
+        unset($ch);
 
         $rawHeaders = substr((string) $raw, 0, $headerSize);
         $responseBody = substr((string) $raw, $headerSize);
